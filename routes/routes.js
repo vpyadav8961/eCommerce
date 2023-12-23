@@ -24,9 +24,9 @@ router.post('/login', (req, res) => {
     res.json({ token });
   });
   
-router.get('/products', verifyToken, getProducts);
-router.get('/categories', verifyToken, getCategories)
-router.post('/add-to-cart', verifyToken, addToCart);
+router.get('/products', getProducts);
+router.get('/categories', getCategories)
+router.post('/add-to-cart', addToCart);
 router.delete('/cartItems/:cartItemId', verifyToken, deleteProductFromCart);
 
 
