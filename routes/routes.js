@@ -29,7 +29,7 @@ router.post('/add-products', addProducts);
 router.get('/cartItems/:userId', getCartItems);
 router.get('/categories', getCategories)
 router.post('/add-to-cart', addToCart);
-router.delete('/cartItems/:cartItemId', verifyToken, deleteProductFromCart);
+router.delete('/cartItems/:cartItemId', deleteProductFromCart);
 
 
 module.exports = router;

@@ -88,7 +88,7 @@ let getCategories = async (req, res) => {
 let deleteProductFromCart = async (req, res) => {
     try {
         let cartItemId = req.params.cartItemId;
-        await pool.query('DELETE FROM cart_items WHERE id = $1', [cartItemId]);
+        await pool.query('DELETE FROM cartitems WHERE cart_item_id = $1', [cartItemId]);
         res.json({ message: 'Cart item deleted successfully' });
     } catch (error) {
         console.error(error);
