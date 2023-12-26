@@ -6,6 +6,7 @@ const productsRoute = require('./routes/routes');
 const cors = require('cors'); 
 
 const app = express();
+app.use(express.json());
 const port = process.env.PORT || 3003;
 
 const pool = new Pool({

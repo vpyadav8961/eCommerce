@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const {verifyToken} = require('../middleware/auth');
-const {getProducts, addToCart, getCategories, deleteProductFromCart} = require('../controllers/products');
+const {getProducts, addToCart, getCategories, deleteProductFromCart, addProducts, getCartItems} = require('../controllers/products');
 
 const users = [
   { id: 1, username: 'user1', password: 'hashed1', email: 'user1@techmahindra.com' },
@@ -25,6 +25,8 @@ router.post('/login', (req, res) => {
   });
   
 router.get('/products', getProducts);
+router.post('/add-products', addProducts);
+router.get('/cartItems/:userId', getCartItems);
 router.get('/categories', getCategories)
 router.post('/add-to-cart', addToCart);
 router.delete('/cartItems/:cartItemId', verifyToken, deleteProductFromCart);

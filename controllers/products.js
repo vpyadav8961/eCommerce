@@ -9,40 +9,51 @@ const pool = new Pool({
     port: process.env.DB_PORT,
   });
 
-let addProducts = function (req, res) {
+let addProducts = async function (req, res) {
     try {
-        const { productName, productDescription } = req.body;
-        const query = 'INSERT INTO products (product_name, product_description) VALUES ($1, $2) RETURNING *';
-        const values = [productName, productDescription];
+        console.log("Inside the addProducts:: ");
+        const { productName, productDescription, price, product_url } = req.body;
+        const query = 'INSERT INTO products (product_name, product_description, price, product_url) VALUES ($1, $2, $3, $4) RETURNING *';
+        const values = [productName, productDescription, price, product_url];
+        let id = await pool.query(query, values);
+        res.status(200).json({message: "Inserted data in products table", productId: id});
     } catch (error) {
-        
+        res.status(500).json({ message: 'Internal Server Error' });
     }
 }
 
 let addToCart = async (req, res) => {
     try {
-      const { userId, productId, quantity, cartId } = req.body;
+      const { userId, productId, quantity } = req.body;
+      console.log("Request Body::: ", req.body);
         console.log("UserId: ", userId, " ProductId: ", productId, " quantity: ", quantity);
       // Check if the user and product exist
       const userResult = await pool.query('SELECT * FROM Users WHERE user_id = $1', [userId]);
       const productResult = await pool.query('SELECT * FROM Products WHERE id = $1', [productId]);
-      console.log(userResult, " Product Result::: ", productResult);
+      console.log(userResult.rows, " Product Result::: ", productResult.rows);
+
+      const cartResult = await pool.query('SELECT * FROM Cart WHERE user_id = $1', [userId]);
   
       if (userResult.rows.length === 0 || productResult.rows.length === 0) {
-        return res.status(404).json({ message: 'User or product not found' });
+        return res.status(200).json({ message: 'User or product not found' });
       }
 
-      const cartItem = await pool.query('SELECT * FROM CartItems WHERE cart_id = $1 AND product_id = $2', [cartId, productId]);
+      let cart_id;
+      if(cartResult.rows.length > 0){
+        cart_id = cartResult.rows[0].cart_id;
+      } else {
+        const cartRes = await pool.query('INSERT INTO Cart (user_id) VALUES ($1) RETURNING cart_id;', [userId]);
+        cart_id = cartRes.rows[0].cart_id;
+      }
 
-      console.log("Cart Item:::: ", cartItem);
+      const cartItem = await pool.query('SELECT * FROM CartItems WHERE cart_id = $1 AND product_id = $2', [cart_id, productId]);
 
       if(cartItem.rows.length > 0){
-          console.log("Inside the update cart::: ");
-        await pool.query('UPDATE CartItems SET quantity = $1 WHERE cart_id = $2 AND product_id = $3', [quantity, cartId, productId]);
+        await pool.query('UPDATE CartItems SET quantity = $1 WHERE cart_id = $2 AND product_id = $3', [quantity, cart_id, productId]);
       } else {
         await pool.query(
             'INSERT INTO CartItems (cart_id, product_id, quantity) VALUES ($1, $2, $3)',
-            [cartId, productId, quantity]
+            [cart_id, productId, quantity]
           );
       }
 
@@ -56,7 +67,6 @@ let addToCart = async (req, res) => {
 
 let getProducts = async (req, res) => {
     try {
-        console.log("Inside the get Products:::: ");
         const result = await pool.query('SELECT * FROM products');
         res.json(result.rows);
       } catch (error) {
@@ -78,7 +88,7 @@ let getCategories = async (req, res) => {
 let deleteProductFromCart = async (req, res) => {
     try {
         let cartItemId = req.params.cartItemId;
-        await client.query('DELETE FROM cart_items WHERE id = $1', [cartItemId]);
+        await pool.query('DELETE FROM cart_items WHERE id = $1', [cartItemId]);
         res.json({ message: 'Cart item deleted successfully' });
     } catch (error) {
         console.error(error);
@@ -86,6 +96,19 @@ let deleteProductFromCart = async (req, res) => {
     }
 }
 
+let getCartItems = async (req, res) => {
+    try {
+        let {userId} = req.params;
+        let cartDetails = 'SELECT products.*, cartitems.quantity FROM users JOIN cart ON users.user_id  = cart.user_id JOIN cartitems ON cart.cart_id = cartitems.cart_id JOIN products ON cartitems.product_id = products.id WHERE users.user_id  = $1;';
+        let cartRes = await pool.query(cartDetails, [userId]);
+        console.log(cartRes.rows);
+        res.status(200).json({status: "success", data: cartRes.rows})
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+}
+
 module.exports = {
-    getProducts, addProducts, addToCart, getCategories, deleteProductFromCart
+    getProducts, addProducts, addToCart, getCategories, deleteProductFromCart, getCartItems
 }
